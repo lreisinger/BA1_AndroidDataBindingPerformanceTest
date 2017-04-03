@@ -26,7 +26,8 @@ public class DataBindingActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.item1:
-                Helper.testUIDelay_async(this);
+                Tester t = new Tester(this, 100);
+                t.test();
                 return true;
             case R.id.item2:
                 //testUIDelay();

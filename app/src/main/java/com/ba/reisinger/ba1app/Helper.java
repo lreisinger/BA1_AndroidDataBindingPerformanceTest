@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.SystemClock;
 import android.util.Log;
 
+import com.ba.reisinger.ba1app.databinding.ActivityDataBindingBinding;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 
@@ -13,53 +15,44 @@ import java.util.ArrayList;
 
 public class Helper {
 
-    public static void testUIDelay_async(final Activity activity){
+    //call this methos from non-ui thread
+    public static TestResult testUIDelay(final Activity activity, final CustomTextView[] views) {
 
-        Thread th = new Thread(new Runnable() {
+        final boolean isDataBinding = activity instanceof DataBindingActivity;
+        long startTime_SetText = 0;
+
+        Log.i("performance", "== " + activity.getLocalClassName() + " Test ==");
+
+        Runnable changeTextViewsTask = new Runnable() {
             @Override
-            public void run() { //non-ui thread
-                final boolean isDataBinding = activity instanceof DataBindingActivity;
-                long startTime_SetText = 0;
-
-                Log.i("performance", "== " + activity.getLocalClassName() + " Test ==");
-
-                //alle<r TextViews holen
-                final CustomTextView[] views = Helper.getAllTextViews(activity);
-
-
-                Runnable changeTextViewsTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        if(!isDataBinding) {
-                            Helper.changeTextViews(views);
-                        }
-                        else {
-                            ((DataBindingActivity) activity).model.setText(Helper.getNextText());
-                        }
-                    }
-                };
-
-
-                //Timestamp bevor TextView upgedated werden
-                startTime_SetText = System.currentTimeMillis();//set start time
-                Log.i("performance", "Timestamp setText:              " + startTime_SetText);
-
-                //Change All TextViews on UI Thread:
-                activity.runOnUiThread(changeTextViewsTask);
-
-                //Wait until TextViews are updated
-                SystemClock.sleep(800);
-
-                //Measure maximum Delay
-                long finishedDrawing = Helper.getLatestTextViewUpdate(views, startTime_SetText); //minValue sodass vor dieser zeit keine zeiten von textview genommen werden
-                Log.i("performance", "Timestamp latest TextView Draw: " + finishedDrawing);
-                long delta = finishedDrawing-startTime_SetText;
-
-                Log.i("performance", "Delta: " + delta + " ms");
-                Log.i("performance", " ");
+            public void run() {
+                if (!isDataBinding) {
+                    Helper.changeTextViews(views);
+                } else {
+                    ((DataBindingActivity) activity).model.setText(Helper.getNextText());
+                }
             }
-        });
-        th.start();
+        };
+
+
+        //Timestamp bevor TextView upgedated werden
+        startTime_SetText = System.currentTimeMillis();//set start time
+        Log.i("performance", "Timestamp setText:              " + startTime_SetText);
+
+        //Change All TextViews on UI Thread:
+        activity.runOnUiThread(changeTextViewsTask);
+
+        //Wait until TextViews are updated
+        SystemClock.sleep(800);
+
+        //Measure maximum Delay
+        long finishedDrawing = Helper.getLatestTextViewUpdate(views, startTime_SetText); //minValue sodass vor dieser zeit keine zeiten von textview genommen werden
+        Log.i("performance", "Timestamp latest TextView Draw: " + finishedDrawing);
+        long delta = finishedDrawing - startTime_SetText;
+
+        Log.i("performance", "Delta: " + delta + " ms");
+
+        return new TestResult(startTime_SetText, finishedDrawing);
     }
 
 
@@ -103,6 +96,7 @@ public class Helper {
     }
 
     public static CustomTextView[] getAllTextViews(Activity activity){
+
         ArrayList<CustomTextView> viewsList = new ArrayList<>();
 
         Field[] fs = activity.getClass().getDeclaredFields();
