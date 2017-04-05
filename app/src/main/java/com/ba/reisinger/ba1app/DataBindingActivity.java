@@ -26,7 +26,7 @@ public class DataBindingActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.item1:
-                Tester t = new Tester(this, 100);
+                Tester t = new Tester(this, 500);
                 t.test();
                 return true;
             case R.id.item2:
